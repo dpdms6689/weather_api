@@ -1,0 +1,85 @@
+import requests #HTTP 요청을 보내고 받는 기능을 제공
+
+# 한국어 도시 이름과 해당 도시의 영어 이름을 매핑한 딕셔너리
+city_mapping = {
+    "서울": "Seoul",
+    "춘천": "Chuncheon",
+    "부산": "Busan",
+    "대구": "Daegu",
+    "인천": "Incheon",
+    # 추가할 도시들은 필요에 따라 딕셔너리에 추가
+}
+
+def get_weather(city_name, api_key):
+    # 입력된 한국어 도시 이름이 딕셔너리에 있는지 확인하고, 영어로 변환
+    if city_name in city_mapping:
+        city_name_en = city_mapping[city_name]
+    else:
+        print("해당 도시의 영어 이름을 찾을 수 없습니다.")
+        return
+
+    # OpenWeatherMap API에서 현재 날씨 정보를 가져오는 URL
+    current_weather_url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name_en}&appid={api_key}&units=metric"
+
+    # OpenWeatherMap API에서 시간별 날씨 예보를 가져오는 URL
+    forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?q={city_name_en}&appid={api_key}&units=metric"
+
+    # 현재 날씨 정보 가져오기
+    current_response = requests.get(current_weather_url)
+    current_data = current_response.json()
+
+    # 시간별 날씨 예보 가져오기
+    forecast_response = requests.get(forecast_url)
+    forecast_data = forecast_response.json()
+
+    # 현재 날씨 정보 출력
+    if current_data["cod"] == 200:
+        weather_description = current_data["weather"][0]["description"]
+        temperature = current_data["main"]["temp"]
+        humidity = current_data["main"]["humidity"]
+        wind_speed = current_data["wind"]["speed"]
+
+        print(f"현재 {city_name}의 날씨: {weather_description}")
+        print(f"온도: {temperature}℃")
+        print(f"습도: {humidity}%")
+        print(f"풍속: {wind_speed} m/s")
+
+        # 날씨에 따라 의상 추천
+        recommend_clothing(weather_description, temperature)
+    else:
+        print("날씨 정보를 가져올 수 없습니다.")
+
+    # 시간별 날씨 예보 출력
+    if forecast_data["cod"] == "200":
+        print(f"\n{city_name}의 5일간 날씨 예보:")
+        for forecast in forecast_data["list"]:
+            forecast_date = forecast["dt_txt"].split()[0]  # 예보의 날짜 부분만 추출
+            if forecast_date not in forecast_data:  # 해당 날짜의 예보가 출력되지 않았다면
+                forecast_weather = forecast["weather"][0]["description"]
+                forecast_temperature = forecast["main"]["temp"]
+                forecast_humidity = forecast["main"]["humidity"]
+                forecast_wind_speed = forecast["wind"]["speed"]
+
+                print(f"{forecast_date}: {forecast_weather}, 온도: {forecast_temperature}℃, 습도: {forecast_humidity}%, 풍속: {forecast_wind_speed} m/s")
+                forecast_data[forecast_date] = True  # 해당 날짜의 예보 출력 여부를 True로 설정
+    else:
+        print("날씨 예보를 가져올 수 없습니다.")
+
+def recommend_clothing(weather_description, temperature):
+    # 날씨와 온도에 따라 다양한 의상 추천
+    if "비" in weather_description:
+        print("우산과 방수복을 추천합니다.")
+    elif "눈" in weather_description:
+        print("눈이 내리니 눈을 보호할 안경과 방수 신발을 추천합니다.")
+    else:
+        if temperature < 5:
+            print("추운 날씨에는 두꺼운 코트와 목도리를 추천합니다.")
+        elif temperature < 15:
+            print("서늘한 날씨에는 가벼운 재킷이나 스웨터를 추천합니다.")
+        else:
+            print("따뜻한 날씨에는 편한 옷을 입어도 좋습니다.")
+
+if __name__ == "__main__":
+    city = input("날씨를 확인할 도시를 입력하세요: ")
+    api_key = "ddd7f31c9a1bb0e82b033e3826140976"  # 발급받은 API 키 입력
+    get_weather(city, api_key)
